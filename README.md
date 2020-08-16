@@ -15,11 +15,11 @@ Swift extensions repo is consist of various Swift Extension that helps in adding
 
 
 1. Clone the Project
-2. Drag and Drop [Extensions.swift](https://github.com/DhruvGovani/SwiftExtensions/blob/master/DGExtensions.swift.swift) in your project directory
+2. Drag and Drop [DGExtensions.swift](https://github.com/DhruvGovani/SwiftExtensions/blob/master/DGExtensions.swift) in your project directory
 3. Make sure Add to target is marked
 4. You are ready to go.
 
-##### More info:
+## More info:
 
   - There are 80+ Extensions Usefull for every routine developement.
   - Each and every extensions have the proper documentation to know how to use the,
