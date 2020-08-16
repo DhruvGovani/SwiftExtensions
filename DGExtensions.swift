@@ -1,6 +1,7 @@
 //
 //  DGExtensions.swift
-//  
+//
+//  Total Extensions : 80+
 //
 //  Created by Dhruv Govani on 27/06/20.
 //
@@ -53,7 +54,9 @@ enum GradientDirection{
 
 extension UIView{
     ///Round the edges of all views defined in parameter
-    ///Usage : UIView().RoundEdgesOf(Views: [Label,TextField,Button,SubView])
+    /// # Usage :
+    ///    UIView().RoundEdgesOf(Views: [Label,TextField,Button,SubView])
+    /// - parameter Views: List of UIView you wanted to round edges of
     func RoundEdgesOf(Views : [UIView]){
         
         for i in Views{
@@ -62,6 +65,22 @@ extension UIView{
         }
         
     }
+    
+    /// Give same border to all views being mentioned
+    /// # Usage:
+    ///     UIView().GiveBorderTo(Views: [Label,TextField,Button,SubView],borderColor : .black, borderWidth: 1 )
+    /// - parameter Views: List of view to apply border
+    /// - parameter borderColor: color of border
+    /// - parameter borderWidth: width of border
+    func GiveBorderTo(Views : [UIView], borderColor : UIColor, borderWidth : CGFloat){
+        
+        for i in Views{
+            i.layer.borderWidth = borderWidth
+            i.layer.borderColor = borderColor.cgColor
+        }
+        
+    }
+    
     ///Round the edges of all view
     func RoundMe(Radius : CGFloat?){
         self.clipsToBounds = true
@@ -171,6 +190,49 @@ extension UIView{
         
         self.layer.insertSublayer(gradientLayer, at:0)
     }
+    /// returns the superview of the view
+    func superview<T>(of type: T.Type) -> T? {
+        return superview as? T ?? superview.flatMap { $0.superview(of: type) }
+    }
+    
+    /**
+        Function will shake the viwe with a vibration
+        - parameters:
+            - Vibrate : Bool value to vibrate the device or not
+            - speed: Speed of the shake
+            - completion: if you want something to do after shake completed
+     */
+    func shake(Vibrate : Bool,speed : Double?,completion: (() -> Void)? = nil) {
+            let speed = speed ?? 0.75
+            let time = 1.0 * speed - 0.15
+            let timeFactor = CGFloat(time / 4)
+            let animationDelays = [timeFactor, timeFactor * 2, timeFactor * 3]
+
+            let shakeAnimator = UIViewPropertyAnimator(duration: time, dampingRatio: 0.3)
+            // left, right, left, center
+            shakeAnimator.addAnimations({
+                self.transform = CGAffineTransform(translationX: 10, y: 0)
+            })
+            shakeAnimator.addAnimations({
+                self.transform = CGAffineTransform(translationX: -10, y: 0)
+            }, delayFactor: animationDelays[0])
+            shakeAnimator.addAnimations({
+                self.transform = CGAffineTransform(translationX: 10, y: 0)
+            }, delayFactor: animationDelays[1])
+            shakeAnimator.addAnimations({
+                self.transform = CGAffineTransform(translationX: 0, y: 0)
+            }, delayFactor: animationDelays[2])
+            shakeAnimator.startAnimation()
+
+            shakeAnimator.addCompletion { _ in
+                completion?()
+            }
+
+            shakeAnimator.startAnimation()
+            if Vibrate{
+                UIViewController().VibratePhone(Hardness: .low)
+            }
+        }
 }
 
 extension String{
@@ -213,65 +275,96 @@ extension String{
            self = trimmedText
     }
     
-    /// This function will convert the string date to a perticular format.
-    /// - must provide a valid string or you will get some default date
-    /// Formats :  Here is all formats for ease of use
+    /// This function will convert the string date to a perticular format and will return the output in both string and date.
+    /// # Functionalties:
+    /// 1.  Convert String date to any format
+    /// 2.  Convert date and 12Hout to 24Hour just use perfect format from above
+    /// 3.  Convert date with time zone by providing which timeZone you wanted the output in.
+    /// 4.  Returns output in both String and Date
     /// - parameter currentFormat: Current format of the date
     /// - parameter toFormat: output format of the date
-    /// - returns: String output of the date in specfied format
-    /// - yy :   08
-    /// - yyyy :   2008
-    /// - M  -  12
-    /// - MM  - 12
-    /// - MMM - Dec
-    /// - MMMM  - December
-    /// - MMMMM  - D
-    /// - d - 14
-    /// - dd - 14
-    /// - F - 3rd Tuesday in December
-    /// - E - Tues
-    /// - EEEE - Tuesday
-    /// - EEEEE - T
-    /// - h  -  4
-    /// - hh -   04
-    /// - H   - 16
-    /// - HH  - 16
-    /// - a  -  PM
-    /// - zzz  -  CST  :  The 3 letter name of the time zone. Falls back to GMT-08:00 (hour offset) if the name is not known.
-    /// - zzzz -  Central Standard Time  : The expanded time zone name, falls back to GMT-08:00 (hour offset) if name is not known.
-    /// - zzzz  -  CST-06:00  : Time zone with abbreviation and offset
-    /// - Z  -  -0600  :  RFC 822 GMT format. Can also match a literal Z for Zulu (UTC) time.
-    /// - ZZZZZ  - -06:00
-    func convertDate_ToFormat(currentFormat: String, toFormat : String) ->  String {
-        
+    /// - parameter timeZone: The Output timezone of the date
+    /// - returns: String and Date both output will be given. use Dot operator to access any (.)
+    /// # Formats:
+    /// # 08 - (Only Last two digit of Year)
+    ///     "yy"
+    /// # 2008 - (Whole length of Year)
+    ///     "yyyy"
+    /// # 12 - (Simple Single/double digit of year. e.g : 1,2,3...9,10,11)
+    ///     "M"
+    /// # 12 - (Simple double digit of Year, e.g : 01,02..12)
+    ///     "MM"
+    /// # Dec - (Initial human readable word of Year)
+    ///     "MMM"
+    /// # December - (full HR word of Year)
+    ///     "MMMM"
+    /// # D - (Single letter of Year)
+    ///     "MMMMM"
+    /// # 1 - (Single digit date of Date e.g : 1,2,3.......,29,30)
+    ///     "d"
+    /// # 01 - (Double digit of Date e.g : 01,02,03.......,29,30)
+    ///     "dd"
+    /// # 3rd Tuesday in December - (Total Human redable with day of a date)
+    ///     "F"
+    /// # Tues - (day intial of day of the date)
+    ///     "E"
+    /// # Tuesday - (day full)
+    ///     "EEEE"
+    /// # T - (day single intial)
+    ///     "EEEEE"
+    /// # 4 - (12 hour in single digit)
+    ///     "h"
+    /// # 04 - (12 hour in two digit)
+    ///     "hh"
+    /// # 16 - (24 hour in single digit)
+    ///     "H"
+    /// # 16 - (24 hour in two digit)
+    ///     "HH"
+    /// # AM/PM - (Meriediem)
+    ///     "a"
+    /// # CST  :  The 3 letter name of the time zone. Falls back to GMT-08:00 (hour offset) if the name is not known.
+    ///     "zzz"
+    /// # Central Standard Time  : The expanded time zone name, falls back to GMT-08:00 (hour offset) if name is not known.
+    ///      "zzzz"
+    /// # CST-06:00  : Time zone with abbreviation and offset
+    ///      "zzzz"
+    /// # -0600  :  RFC 822 GMT format. Can also match a literal Z for Zulu (UTC) time.
+    ///     "Z"
+    /// # -06:00
+    ///     "ZZZZZ"
+    func ConvertDate(currentFormat: String, toFormat : String, timeZone : DateTimeZone?) ->  (String,Date){
         let dateFormator = DateFormatter()
         dateFormator.locale = Locale(identifier: "en_US_POSIX")
         dateFormator.dateFormat = currentFormat
-        let resultDate = dateFormator.date(from: self) ?? Date(timeInterval: -3600, since: Date())
-        dateFormator.dateFormat = toFormat
-        return dateFormator.string(from: resultDate)
-    }
-    
-    /// This function will convert the date string into Date Object
-    /// - parameter format : format for the date object you want in
-    /// - parameter timeZone: timezone for the date
-    /// - returns: Date object based on the string and timezone provided
-    func toDate(format : String, timeZone : DateTimeZone?) -> Date{
-        
-        let dateFormatter = DateFormatter()
-        dateFormatter.locale = Locale(identifier: "en_US_POSIX") // set locale to reliable US_POSIX
-        dateFormatter.dateFormat = format
+
         switch timeZone {
         case .Local:
-            dateFormatter.timeZone = TimeZone.current
+            dateFormator.timeZone = TimeZone(abbreviation: "UTC")
         case .UTC:
-            dateFormatter.timeZone = TimeZone.init(abbreviation: "UTC")
+            dateFormator.timeZone = TimeZone.current
         case .none:
             break
         }
         
-        let date = dateFormatter.date(from:self) ?? Date()
-        return date
+        let resultDate = dateFormator.date(from: self) ?? Date(timeInterval: -3600, since: Date())
+        dateFormator.dateFormat = toFormat
+        
+        switch timeZone {
+        case .Local:
+            dateFormator.timeZone = TimeZone.current
+        case .UTC:
+            dateFormator.timeZone = TimeZone(abbreviation: "UTC")
+        case .none:
+            break
+        }
+        
+        let dateInStr = dateFormator.string(from: resultDate)
+        
+        if timeZone == .Local{
+            dateFormator.timeZone = TimeZone(abbreviation: "UTC")
+        }
+                
+        return (dateInStr , dateFormator.date(from: dateInStr) ?? Date())
     }
     
     /// This function will give you a string which will describe the time difference in human readable form from the today's date
@@ -282,7 +375,7 @@ extension String{
     /// - returns: returns a string with proper time difference explanation
     func getElapsedInterval(currentFormat : String, timeZone : DateTimeZone) -> String {
         
-        let fromDate = self.toDate(format: currentFormat, timeZone: timeZone)
+        let fromDate = self.ConvertDate(currentFormat: currentFormat, toFormat: currentFormat, timeZone: timeZone).1
         
         let toDate = Date()
         
@@ -321,70 +414,6 @@ extension String{
         
     }
     
-    enum TimeConversionMode{
-        case From24To12, From12To24
-    }
-    
-    /// This Fucntion will convert the time based on your choices
-    /// - incoming/Outgoing format : 12Hours : "12:00 AM" , 24Hours : "13:00:00"
-    /// - parameter mode: mode of the conversion
-    /// - returns: Will returns the string after conversion
-    func timeConversion(mode : TimeConversionMode) -> String {
-        let dateAsString = self
-        let df = DateFormatter()
-        df.locale =  Locale(identifier: "en_US_POSIX")
-        switch mode {
-        case .From24To12:
-            df.dateFormat = "HH:mm:ss"
-        case .From12To24:
-            df.dateFormat = "hh:mm a"
-        }
-
-        let date = df.date(from: dateAsString)
-        
-        switch mode {
-        case .From24To12:
-            df.dateFormat = "hh:mm a"
-        case .From12To24:
-            df.dateFormat = "HH:mm:ss"
-        }
-        
-        let convertedTime = df.string(from: date ?? Date(timeInterval: -3600, since: Date()))
-        
-        return convertedTime
-    }
-    
-    /// This Fucntion will convert the date time based on your choices
-    /// - Note: date will be formated as it is and time will be as below
-    /// - format:  12Hours : "12:00 AM" , 24Hours : "13:00:00"
-    /// - parameter mode: mode of the conversion
-    /// - returns: Will returns the string after conversion
-    func DateAndtimeConversion(OnlyDateFormat: String, mode : TimeConversionMode) -> String {
-        let dateAsString = self
-        let df = DateFormatter()
-        df.locale =  Locale(identifier: "en_US_POSIX")
-        
-        switch mode {
-        case .From24To12:
-            df.dateFormat = "\(OnlyDateFormat) HH:mm:ss"
-        case .From12To24:
-            df.dateFormat = "\(OnlyDateFormat) HH:mm a"
-        }
-
-        let date = df.date(from: dateAsString)
-        
-        switch mode {
-        case .From24To12:
-            df.dateFormat = "\(OnlyDateFormat) HH:mm a"
-        case .From12To24:
-            df.dateFormat = "\(OnlyDateFormat) HH:mm:ss"
-        }
-
-        let newDate = df.string(from: date ?? Date(timeInterval: -3600, since: Date()))
-        
-        return newDate
-    }
-    
     enum TimeDifference {
         case year,month,hour,Minute,Second
     }
@@ -397,7 +426,7 @@ extension String{
     /// - parameter InputFormat: format of your current date
     /// - parameter OutputFormat: format of output
     /// - returns: Will return string with added time difference
-    func AddtimeDifference(Step : Int, DifferenceIn: TimeDifference, InputFormat: String, OutputFormat : String) -> String{
+    func AddtimeDifference(Step : Int, DifferenceIn: TimeDifference, InputFormat: String, OutputFormat : String, TimeZone : DateTimeZone?) -> String{
         
         
            let dateFormatter = DateFormatter()
@@ -662,6 +691,31 @@ extension String{
         }
         return ""
     }
+    
+    /// this function will return the NSRange of a string after the occurance of the specified char
+    /// - parameter after: char to take range after
+    func getRange(after : String) -> NSRange{
+        
+        var loc = 0
+        var len = 0
+        var match = false
+        
+        for i in 0..<self.count{
+            if self[i] == after{
+                match = true
+            }else{
+                if match == true{
+                    len += 1
+                }else{
+                    loc += 1
+                }
+            }
+        }
+        
+        return NSRange(location: loc+1, length: len)
+        
+    }
+    
 }
 
 extension UIButton{
@@ -1296,6 +1350,27 @@ extension UIViewController{
         view.endEditing(true)
     }
     
+    enum VibrationType{
+        case low,medium,high
+    }
+    
+    /**
+        This function will vibrate the phone to alert the user.
+        - parameters:
+            - Hardness: Hardness of the vibration you need.
+     */
+    func VibratePhone(Hardness : VibrationType){
+        let notificationFeedbackGenerator = UINotificationFeedbackGenerator()
+        notificationFeedbackGenerator.prepare()
+        switch Hardness {
+        case .low:
+            notificationFeedbackGenerator.notificationOccurred(.success)
+        case .medium:
+            notificationFeedbackGenerator.notificationOccurred(.warning)
+        case .high:
+            notificationFeedbackGenerator.notificationOccurred(.error)
+        }
+    }
 }
 
 extension UITabBarController{
@@ -1652,5 +1727,54 @@ extension Data {
     var hexString: String {
         let hexString = map { String(format: "%02.2hhx", $0) }.joined()
         return hexString
+    }
+}
+extension NSAttributedString {
+    /// Give color to a perticular substring in string
+    /// - parameter substring: Substring you wanted to get colored
+    /// - parameter color : color of the highlited string
+    func highlighting(_ substring: String, using color: UIColor) -> NSAttributedString {
+        let attributedString = NSMutableAttributedString(attributedString: self)
+        attributedString.addAttribute(.foregroundColor, value: color, range: (self.string as NSString).range(of: substring))
+        return attributedString
+    }
+}
+extension UIPickerView{
+
+    /// This function will set an empty message for your collection in very center of the view
+    /// - note: use restore() function to remove the message
+    /// - parameter message: Message you wanted to show
+    /// - parameter font: font of the text
+    /// - parameter textColor: color of text
+    func setEmptyMessage(message : String, font : UIFont?, textColor: UIColor?){
+        let messageLabel = UILabel(frame:.zero)
+        messageLabel.text = message
+        messageLabel.textColor = textColor ?? UIColor.black
+        messageLabel.numberOfLines = 0;
+        messageLabel.textAlignment = .center;
+        
+        messageLabel.font = font ?? UIFont.systemFont(ofSize: 23)
+        messageLabel.textColor = textColor ?? UIColor.black
+        messageLabel.sizeToFit()
+        
+        self.addSubview(messageLabel)
+        
+        messageLabel.translatesAutoresizingMaskIntoConstraints = false
+
+        NSLayoutConstraint.activate([
+                   messageLabel.leadingAnchor.constraint(equalTo: self.leadingAnchor, constant: 0),
+                   messageLabel.trailingAnchor.constraint(equalTo: self.trailingAnchor, constant: 0),
+                   messageLabel.bottomAnchor.constraint(equalTo: self.bottomAnchor, constant: 0),
+                   messageLabel.topAnchor.constraint(equalTo: self.topAnchor)])
+
+    }
+    
+    /// will remove message view from the UIPickerView
+    func restore(){
+        
+        for i in self.subviews{
+            i.removeFromSuperview()
+        }
+        
     }
 }
