@@ -1156,7 +1156,7 @@ extension UIViewController{
     /// - parameter Target : target can be self or nil
     func SetNavBarItem(Position : Location, Title : String?,Icon : UIImage?, TintColor : UIColor?, Action : Selector?, Target : Any?){
         
-        let image = Icon?.resize(withSize: CGSize(width: 30, height: 30), contentMode: .contentAspectFill)
+        let image = Icon?.resize(withSize: CGSize(width: 22, height: 22), contentMode: .contentAspectFit)
 
         var button1 : UIBarButtonItem!
             
