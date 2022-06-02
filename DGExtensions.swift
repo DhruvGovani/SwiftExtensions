@@ -255,6 +255,16 @@ extension String{
     var isValidEmail: Bool {
         NSPredicate(format: "SELF MATCHES %@", "[A-Z0-9a-z._%+-]+@[A-Za-z0-9.-]+\\.[A-Za-z]{2,}").evaluate(with: self)
     }
+    
+    /// you can use this function to check the email is valid or invalid
+    var isValidUsername: Bool {
+        NSPredicate(format: "SELF MATCHES %@","[A-Za-z0-9_]+").evaluate(with: self)
+    }
+    
+    var isValidName : Bool{
+        NSPredicate(format: "SELF MATCHES %@","^([A-Za-z]+ )+[A-Za-z]+$|^[A-Za-z]+$").evaluate(with: self)
+    }
+    
     /// returns the boolean value telling if string contains the whitespace or not
     var containsWhitespace: Bool {
         for scalar in unicodeScalars {
@@ -266,6 +276,18 @@ extension String{
             }
         }
         return false
+    }
+    
+    func formatPhone(pattern: String, replacementCharacter: Character) -> String {
+        var pureNumber = self.replacingOccurrences( of: "[^0-9]", with: "", options: .regularExpression)
+        for index in 0 ..< pattern.count {
+            guard index < pureNumber.count else { return pureNumber }
+            let stringIndex = String.Index(utf16Offset: index, in: pattern)
+            let patternCharacter = pattern[stringIndex]
+            guard patternCharacter != replacementCharacter else { continue }
+            pureNumber.insert(patternCharacter, at: stringIndex)
+        }
+        return pureNumber
     }
     
     /// This function will remove all the white space and new lines  from trailing or leading of the text inside of the textview
@@ -940,35 +962,31 @@ extension UITextField{
     /// - parameter Postion : Position of the icon in textfield
     /// - parameter Image : Icon asset you want to set
     /// - parameter isRounded : if textfield is rounded or not
-    func setIcon(Postion : Location, Image : UIImage, isRounded : Bool){
-        
-        var x : CGFloat = 5
-        var width : CGFloat = 40
-        
-        if isRounded{
-            
-            self.RoundMe(Radius: nil)
-            
-            if Postion == .left{
-                x = 20
-            }else{
-                x = 10
-            }
-            width = width + 20
-        }else{
-            x = 5
-        }
+    func setIcon(Postion : Location, Image : UIImage, isRounded : Bool, size : CGSize = CGSize(width: 25, height: 25), EdgeMargin : CGFloat = 8){
         
         let iconView = UIImageView(frame:
-            CGRect(x: x, y: 0, width: 30, height: self.frame.height))
-        
+                                        .zero)
         iconView.image = Image
         iconView.contentMode = .scaleAspectFit
         
         let iconContainerView: UIView = UIView(frame:
-            CGRect(x: 0, y: 0, width: width, height: self.frame.height))
+            CGRect(x: 0, y: 0, width: self.frame.height, height: self.frame.height))
         
         iconContainerView.addSubview(iconView)
+        
+        iconContainerView.translatesAutoresizingMaskIntoConstraints = false
+        iconView.translatesAutoresizingMaskIntoConstraints = false
+        
+        NSLayoutConstraint.activate([
+        
+            iconContainerView.widthAnchor.constraint(equalToConstant: size.width + (EdgeMargin * 2)),
+            iconContainerView.heightAnchor.constraint(equalToConstant: self.frame.height),
+            iconView.centerYAnchor.constraint(equalTo: iconContainerView.centerYAnchor, constant: 0),
+            iconView.centerXAnchor.constraint(equalTo: iconContainerView.centerXAnchor, constant: 0),
+            iconView.heightAnchor.constraint(equalToConstant: size.height),
+            iconView.widthAnchor.constraint(equalToConstant: size.width)
+        
+        ])
         
         if Postion == .left{
             leftView = iconContainerView
@@ -1063,83 +1081,29 @@ extension UITextField{
 }
 
 extension UIDevice {
-    static let MymodelName: String = {
-           var systemInfo = utsname()
-           uname(&systemInfo)
-           let machineMirror = Mirror(reflecting: systemInfo.machine)
-           let identifier = machineMirror.children.reduce("") { identifier, element in
-               guard let value = element.value as? Int8, value != 0 else { return identifier }
-               return identifier + String(UnicodeScalar(UInt8(value)))
-            
-           }
-
-           func mapToDevice(identifier: String) -> String { // swiftlint:disable:this cyclomatic_complexity
-               #if os(iOS)
-               switch identifier {
-               case "iPod5,1":                                 return "0"
-               case "iPod7,1":                                 return "0"
-               case "iPod9,1":                                 return "0"
-               case "iPhone3,1", "iPhone3,2", "iPhone3,3":     return "0"
-               case "iPhone4,1":                               return "0"
-               case "iPhone5,1", "iPhone5,2":                  return "0"
-               case "iPhone5,3", "iPhone5,4":                  return "0"
-               case "iPhone6,1", "iPhone6,2":                  return "0"
-               case "iPhone7,2":                               return "0"
-               case "iPhone7,1":                               return "0"
-               case "iPhone8,1":                               return "0"
-               case "iPhone8,2":                               return "0"
-               case "iPhone9,1", "iPhone9,3":                  return "0"
-               case "iPhone9,2", "iPhone9,4":                  return "0"
-               case "iPhone8,4":                               return "0"
-               case "iPhone10,1", "iPhone10,4":                return "0"
-               case "iPhone10,2", "iPhone10,5":                return "0"
-               case "iPhone10,3", "iPhone10,6":                return "40"
-               case "iPhone11,2":                              return "40"
-               case "iPhone11,4", "iPhone11,6":                return "40"
-               case "iPhone11,8":                              return "40"
-               case "iPhone12,1":                              return "40"
-               case "iPhone12,3":                              return "40"
-               case "iPhone12,5":                              return "40"
-               case "iPad2,1", "iPad2,2", "iPad2,3", "iPad2,4":return "iPad 2"
-               case "iPad3,1", "iPad3,2", "iPad3,3":           return "iPad (3rd generation)"
-               case "iPad3,4", "iPad3,5", "iPad3,6":           return "iPad (4th generation)"
-               case "iPad6,11", "iPad6,12":                    return "iPad (5th generation)"
-               case "iPad7,5", "iPad7,6":                      return "iPad (6th generation)"
-               case "iPad7,11", "iPad7,12":                    return "iPad (7th generation)"
-               case "iPad4,1", "iPad4,2", "iPad4,3":           return "iPad Air"
-               case "iPad5,3", "iPad5,4":                      return "iPad Air 2"
-               case "iPad11,4", "iPad11,5":                    return "iPad Air (3rd generation)"
-               case "iPad2,5", "iPad2,6", "iPad2,7":           return "iPad mini"
-               case "iPad4,4", "iPad4,5", "iPad4,6":           return "iPad mini 2"
-               case "iPad4,7", "iPad4,8", "iPad4,9":           return "iPad mini 3"
-               case "iPad5,1", "iPad5,2":                      return "iPad mini 4"
-               case "iPad11,1", "iPad11,2":                    return "iPad mini (5th generation)"
-               case "iPad6,3", "iPad6,4":                      return "iPad Pro (9.7-inch)"
-               case "iPad7,3", "iPad7,4":                      return "iPad Pro (10.5-inch)"
-               case "iPad8,1", "iPad8,2", "iPad8,3", "iPad8,4":return "iPad Pro (11-inch)"
-               case "iPad8,9", "iPad8,10":                     return "iPad Pro (11-inch) (2nd generation)"
-               case "iPad6,7", "iPad6,8":                      return "iPad Pro (12.9-inch)"
-               case "iPad7,1", "iPad7,2":                      return "iPad Pro (12.9-inch) (2nd generation)"
-               case "iPad8,5", "iPad8,6", "iPad8,7", "iPad8,8":return "iPad Pro (12.9-inch) (3rd generation)"
-               case "iPad8,11", "iPad8,12":                    return "iPad Pro (12.9-inch) (4th generation)"
-               case "AppleTV5,3":                              return "Apple TV"
-               case "AppleTV6,2":                              return "Apple TV 4K"
-               case "AudioAccessory1,1":                       return "HomePod"
-               case "i386", "x86_64":                          return "\(mapToDevice(identifier: ProcessInfo().environment["SIMULATOR_MODEL_IDENTIFIER"] ?? "iOS"))"
-               default:                                        return identifier
-               }
-               #elseif os(tvOS)
-               switch identifier {
-               case "AppleTV5,3": return "Apple TV 4"
-               case "AppleTV6,2": return "Apple TV 4K"
-               case "i386", "x86_64": return "\(mapToDevice(identifier: ProcessInfo().environment["SIMULATOR_MODEL_IDENTIFIER"] ?? "tvOS"))"
-               default: return identifier
-               }
-               #endif
-           }
-
-           return mapToDevice(identifier: identifier)
-       }()
+    
+    /// Is Simulator
+    var isSimulator: Bool {
+        #if IOS_SIMULATOR
+        return true
+        #else
+        return false
+        #endif
+    }
+    
+    var hasNotch: Bool
+    {
+        if #available(iOS 11.0, *)
+        {
+            let bottom = UIApplication.shared.windows.first { $0.isKeyWindow }?.safeAreaInsets.bottom ?? 0
+            return bottom > 0
+        } else
+        {
+            // Fallback on earlier versions
+            return false
+        }
+    }
+    
 }
 
 extension UIViewController{
@@ -1291,6 +1255,22 @@ extension UIViewController{
         let alert = UIAlertController(title: Message, message: "", preferredStyle: .alert)
         
         alert.addAction(UIAlertAction(title: "OK", style: .default, handler: action))
+        
+        self.present(alert, animated: true, completion: nil)
+        
+    }
+    
+    /// This function will show an alert and perform action after user clicks on button
+    /// - action nil will only display alert with message use SimpleAlert functiion for that.
+    /// - parameter Message : Message you wanted to display
+    /// - parameter action : Action will
+    func showAlertAndAskToPerform(Message : String, action : ((UIAlertAction) -> Void)?){
+        
+        let alert = UIAlertController(title: Message, message: "", preferredStyle: .alert)
+        
+        alert.addAction(UIAlertAction(title: "Yes", style: .default, handler: action))
+        
+        alert.addAction(UIAlertAction(title: "No", style: .default, handler: nil))
         
         self.present(alert, animated: true, completion: nil)
         
@@ -1712,6 +1692,7 @@ extension CGFloat{
         return CGFloat(f)
     }
 }
+
 extension UIRefreshControl {
     /// It will manually pull the refresh control in scrollview to show to the user
     func beginRefreshingManually() {
@@ -1721,6 +1702,7 @@ extension UIRefreshControl {
         beginRefreshing()
     }
 }
+
 extension Data {
     /// This function will return the hex String of the data
     /// - useful for token conversions
@@ -1776,5 +1758,571 @@ extension UIPickerView{
             i.removeFromSuperview()
         }
         
+    }
+}
+
+extension UIButton{
+    func set(_ enabled : Bool){
+        if enabled{
+            self.setTitleColor(.white, for: .normal)
+            self.tintColor = .white
+            self.backgroundColor = AppColors.PrimaryColor
+            self.isUserInteractionEnabled = true
+        }else{
+            self.isUserInteractionEnabled = false
+            self.setTitleColor(AppColors.Gray, for: .normal)
+            self.tintColor = AppColors.Gray
+            self.backgroundColor = AppColors.LightGray
+        }
+    }
+}
+
+extension UIView{
+    
+    func showActivity(){
+        
+        self.subviews.forEach { view in
+            view.isHidden = true
+        }
+        
+        let activitiyIndicator = UIActivityIndicatorView(frame: .zero)
+        
+        self.addSubview(activitiyIndicator)
+        
+        activitiyIndicator.translatesAutoresizingMaskIntoConstraints = false
+        
+        NSLayoutConstraint.activate([
+        
+            activitiyIndicator.centerXAnchor.constraint(equalTo: self.centerXAnchor),
+            activitiyIndicator.centerYAnchor.constraint(equalTo: self.centerYAnchor)
+        
+        ])
+        
+        activitiyIndicator.tag = 999
+        
+        activitiyIndicator.startAnimating()
+        
+        self.isUserInteractionEnabled = false
+        
+    }
+    
+    func hideActivity(){
+        
+        self.subviews.forEach { view in
+            if view is UIActivityIndicatorView && view.tag == 999{
+                
+                view.removeFromSuperview()
+                
+            }else{
+                
+                view.isHidden = false
+                
+            }
+        }
+        
+        self.isUserInteractionEnabled = true
+        
+    }
+    
+}
+
+extension URL{
+    
+    func share(presentOn : UIViewController){
+        
+        let itemToShare = [ self ]
+        let activityViewController = UIActivityViewController(activityItems: itemToShare, applicationActivities: nil)
+        presentOn.present(activityViewController, animated: true, completion: nil)
+        
+    }
+    
+}
+
+extension UIView {
+
+    /**
+       Rotate a view by specified degrees
+       parameter angle: angle in degrees
+     */
+
+    func rotate(angle: CGFloat) {
+        
+        if angle == 0{
+            self.transform = .identity
+        }else{
+            let radians = angle / 180.0 * CGFloat.pi
+            let rotation = self.transform.rotated(by: radians);
+            self.transform = rotation
+        }
+        
+        
+    }
+
+}
+
+extension UIButton{
+    
+    static func highlightButtonTextColors(_ buttons : [UIButton]){
+        
+        buttons.forEach { button in
+            
+            button.setTitleColor(button.titleColor(for: .normal)?.withAlphaComponent(0.5), for: .highlighted)
+            
+        }
+        
+    }
+    
+}
+
+extension UICollectionView
+{
+    ///will retuern number of row widht
+    func estimatedItemWidth(for numberOfItemsPerRow : CGFloat) -> CGFloat
+    {
+        // set number of row in 1 colume
+        
+        var width = self.frame.size.width
+        width -= (self.contentInset.left  + self.contentInset.right)
+        if let layout = collectionViewLayout as? UICollectionViewFlowLayout {
+            width -= (layout.sectionInset.left + layout.sectionInset.right)
+            width -= (layout.minimumInteritemSpacing*numberOfItemsPerRow-1)
+            width /= numberOfItemsPerRow
+        }
+        return width
+    }
+}
+
+extension UIView {
+    ///will return parent view controller of current view controller
+    var parentViewController: UIViewController? {
+        var parentResponder: UIResponder? = self
+        while parentResponder != nil {
+            parentResponder = parentResponder?.next
+            if let viewController = parentResponder as? UIViewController {
+                return viewController
+            }
+        }
+        return nil
+    }
+}
+
+extension String {
+    ///This function will return Attributed string with strikethrough
+    /// - returns : NSMutableAttributedString with strike through attribute added by default
+    func strikeThrough() -> NSMutableAttributedString {
+        let attributeString =  NSMutableAttributedString(string: self)
+        attributeString.addAttribute(
+            NSAttributedString.Key.strikethroughStyle,
+               value: NSUnderlineStyle.single.rawValue,
+                   range:NSMakeRange(0,attributeString.length))
+        return attributeString
+    }
+}
+
+extension UIView {
+    ///will directly load the view from XIB and returns it's object
+    /// - returns : Object type of XIB
+    class func loadFromNib(named: String? = nil) -> Self {
+        let name = named ?? "\(Self.self)"
+        guard
+            let nib = Bundle.main.loadNibNamed(name, owner: nil, options: nil)
+        else { fatalError("missing expected nib named: \(name)") }
+        guard
+            /// we're using `first` here because compact map chokes compiler on
+            /// optimized release, so you can't use two views in one nib if you wanted to
+            /// and are now looking at this
+            let view = nib.first as? Self
+        else { fatalError("view of type \(Self.self) not found in \(nib)") }
+        return view
+    }
+}
+
+extension UIFont {
+    ///will add a weight property in font
+    /// - parameter weight : weight to be added in font
+    func withWeight(_ weight: UIFont.Weight) -> UIFont {
+        let newDescriptor = fontDescriptor.addingAttributes([.traits: [
+                                                                UIFontDescriptor.TraitKey.weight: weight]
+        ])
+        return UIFont(descriptor: newDescriptor, size: pointSize)
+    }
+}
+
+extension UILabel{
+    ///This function will add inter line spacing to your lable with the help of NSMutableAttributedString
+    /// - note: Make sure numberOfLines is set to 0 or > 1 for line spacing.
+    /// - String must be > 0 to get this running
+    /// - parameter spacingValue: Space between lines you wanted if not nil
+    /// - parameter CharacterSpacing:  will add space between characters if not nil
+    func addSpacing(LineHeight: CGFloat?, CharacterSpacing : Double?, range : NSRange?) ->  CGFloat{
+
+        guard let textString = text else { return 0 }
+        
+        guard (textString.count > 0) else { return 0}
+
+        let attributedString = NSMutableAttributedString(string: textString)
+
+        let paragraphStyle = NSMutableParagraphStyle()
+        
+        paragraphStyle.alignment = self.textAlignment
+        
+        var space = LineHeight ?? 0 - self.font.pointSize - (self.font.lineHeight - self.font.pointSize)
+        
+        if let LSpace = LineHeight{
+            
+            space = LSpace - self.font.pointSize - (self.font.lineHeight - self.font.pointSize)
+            
+            paragraphStyle.lineSpacing = space
+            
+            attributedString.addAttribute(
+                .paragraphStyle,
+                value: paragraphStyle,
+                range: range ?? NSRange(location: 0, length: attributedString.length
+            ))
+        }
+        
+        if let CSpace = CharacterSpacing{
+            attributedString.addAttribute(NSAttributedString.Key.kern, value: CSpace, range: range ?? NSRange(location: 0, length: attributedString.length - 1))
+        }
+        
+        self.text = ""
+        self.attributedText = attributedString
+        
+        return space
+    }
+}
+
+extension String{
+    
+    ///This function will remove extra new lines from your string
+    /// - returns : String with ewmoved NewLines
+    mutating func removeNewLines() -> String{
+        _ = self.trimmingCharacters(in: CharacterSet.whitespacesAndNewlines)
+        // replace occurences within the string
+        while let rangeToReplace = self.range(of: "\n") {
+            self.replaceSubrange(rangeToReplace, with: "")
+        }
+        
+        return self
+    }
+    
+    ///This function will remove extra new lines from your string
+    /// - returns : String with ewmoved NewLines and Spaces
+    mutating func removeNewLinesAndSpaces() -> String{
+        _ = self.trimmingCharacters(in: CharacterSet.newlines)
+        // replace occurences within the string
+        while let rangeToReplace = self.range(of: "\n") {
+            self.replaceSubrange(rangeToReplace, with: "")
+        }
+        
+        let result1 = self.replacingOccurrences(of: " ", with: "", options: CompareOptions.regularExpression, range: nil)
+        let result2 = result1.replacingOccurrences(of: "\u{2028}", with: "", options: CompareOptions.regularExpression, range: nil)
+        return result2
+    }
+    
+}
+
+extension UIView{
+    
+    enum DGAnimationType{
+        case crossDissolve
+        case ZoomUp
+        case ZoomDown
+    }
+    
+    ///hide a view with animation
+    /// - parameter animated : hide view with animation or not
+    /// - parameter AnimationType : what kind of animation
+    /// - parameter animated : hide view with animation or not
+    func hide(animated: Bool, AnimationType : DGAnimationType, animationDuration : TimeInterval?){
+        
+        if animated{
+            switch AnimationType {
+            case .crossDissolve:
+                UIView.animate(withDuration: animationDuration ?? .pi, animations: {
+                    self.alpha = 0
+                }, completion: { (_) in
+                    self.isHidden = true
+                })
+            case .ZoomUp:
+                UIView.animate(withDuration: animationDuration ?? .pi, animations: {
+                    self.alpha = 0
+                    self.transform = CGAffineTransform(scaleX: 1.2, y: 1.2)
+                }, completion: { (_) in
+                    self.isHidden = true
+                })
+            case .ZoomDown:
+                UIView.animate(withDuration: animationDuration ?? .pi, animations: {
+                    self.alpha = 0
+                    self.transform = CGAffineTransform(scaleX: 0.6, y: 0.6)
+                }, completion: { (_) in
+                    self.isHidden = true
+                })
+            }
+        }else{
+            self.isHidden = true
+        }
+        
+    }
+   
+}
+
+///This will enable the collection view to auto sizable so it can be added into a ScrollView
+class SelfSizedCollectionView: UICollectionView {
+  var maxHeight: CGFloat = UIScreen.main.bounds.size.height
+  
+  override func reloadData() {
+    super.reloadData()
+    self.invalidateIntrinsicContentSize()
+    self.layoutIfNeeded()
+  }
+  
+  override var intrinsicContentSize: CGSize {
+    let height = min(contentSize.height, maxHeight)
+    return CGSize(width: contentSize.width, height: height)
+  }
+}
+
+///This will enable the table view to auto sizable so it can be added into a ScrollView
+class SelfSizedTableView: UITableView {
+  var maxHeight: CGFloat = UIScreen.main.bounds.size.height
+  
+  override func reloadData() {
+    super.reloadData()
+    self.invalidateIntrinsicContentSize()
+    self.layoutIfNeeded()
+  }
+  
+  override var intrinsicContentSize: CGSize {
+    let height = min(contentSize.height, maxHeight)
+    return CGSize(width: contentSize.width, height: height)
+  }
+}
+
+extension UIActivityIndicatorView{
+    
+    ///Will Make the activity controller visble and also starts the animation
+    func show(){
+        
+        self.isHidden = false
+        self.startAnimating()
+        
+    }
+    
+    ///Will Make the activity controller invisible and also stops the animation
+    func hide(){
+        self.isHidden = true
+        self.stopAnimating()
+    }
+}
+
+extension Array {
+    ///Higher order function to remove duplicate values from array
+    func unique<T:Hashable>(map: ((Element) -> (T)))  -> [Element] {
+        var set = Set<T>() //the unique list kept in a Set for fast retrieval
+        var arrayOrdered = [Element]() //keeping the unique list of elements but ordered
+        for value in self {
+            if !set.contains(map(value)) {
+                set.insert(map(value))
+                arrayOrdered.append(value)
+            }
+        }
+
+        return arrayOrdered
+    }
+    
+}
+
+extension UIViewController{
+    ///it will hide and show the tabbar as required
+    /// - parameter hidden : Bool value if to set tabbar as hidden or not
+    /// - parameter animated : Bool value if to set tabbar as hidden or not
+    func setTabBarHidden(hidden: Bool, animated: Bool) {
+        // hide tab bar
+        let frame = self.tabBarController?.tabBar.frame
+        let height = frame?.size.height
+        let offsetY = (!hidden ? -height! : height)
+        print ("offsetY = \(offsetY ?? 0.0)")
+
+        // zero duration means no animation
+        let duration:TimeInterval = (animated ? 0.3 : 0.0)
+
+        // animate tabBar
+        if frame != nil {
+            UIView.animate(withDuration: duration) {
+                self.tabBarController?.tabBar.frame = frame!.offsetBy(dx: 0, dy: offsetY!)
+                self.view.frame = CGRect(x: 0, y: 0, width: self.view.frame.width, height: self.view.frame.height + offsetY!)
+                self.view.setNeedsDisplay()
+                self.view.layoutIfNeeded()
+                return
+            }
+        }
+    }
+    /// - returns : bool Value indicating if tab bar is hiddent or not
+    func isTabBarIsHidden() -> Bool {
+        return !((self.tabBarController?.tabBar.frame.origin.y)! < UIScreen.main.bounds.height)
+    }
+}
+
+extension UINavigationController {
+    ///will return the previous view controller from navigation controller stack
+    var previousViewController: UIViewController? {
+       viewControllers.count > 1 ? viewControllers[viewControllers.count - 2] : nil
+    }
+}
+
+extension UIView {
+    /// Add Dashed Border around the view
+    func addDashedBorder(color : UIColor, radius : CGFloat?) {
+        let color = color.cgColor
+        
+        let shapeLayer:CAShapeLayer = CAShapeLayer()
+        let frameSize = self.frame.size
+        let shapeRect = CGRect(x: 0, y: 0, width: frameSize.width, height: frameSize.height)
+        
+        shapeLayer.bounds = shapeRect
+        shapeLayer.position = CGPoint(x: frameSize.width/2, y: frameSize.height/2)
+        shapeLayer.fillColor = UIColor.clear.cgColor
+        shapeLayer.strokeColor = color
+        shapeLayer.lineWidth = 1
+        shapeLayer.lineJoin = CAShapeLayerLineJoin.round
+        shapeLayer.lineDashPattern = [3,1]
+        shapeLayer.path = UIBezierPath(roundedRect: shapeRect, cornerRadius: radius ?? self.layer.cornerRadius).cgPath
+        
+        self.layer.addSublayer(shapeLayer)
+                
+    }
+}
+
+extension UIView {
+    
+    /// will return the first responder of the view
+    var firstResponder: UIView? {
+        guard !isFirstResponder else { return self }
+
+        for subview in subviews {
+            if let firstResponder = subview.firstResponder {
+                return firstResponder
+            }
+        }
+
+        return nil
+    }
+    
+    ///Round corners of a view by single corner
+    func roundCorners(corners: UIRectCorner, radius: CGFloat) {
+        let path = UIBezierPath(roundedRect: bounds, byRoundingCorners: corners, cornerRadii: CGSize(width: radius, height: radius))
+        let mask = CAShapeLayer()
+        mask.path = path.cgPath
+        layer.mask = mask
+    }
+}
+
+extension UIRefreshControl{
+    /// End Refreshing of Refresh control and set a title
+    /// - parameter title : title of refresh control to be set after refresh control ends refreshing
+    func endRefreshingAndSet(title : NSAttributedString){
+        self.endRefreshing()
+        DispatchQueue.main.asyncAfter(deadline: .now()+1) {
+            self.attributedTitle = title
+        }
+    }
+    
+    /// Quick Seup Refresh Control
+    /// - parameter view : View to attach refresh control
+    /// - parameter Title : Title if needed to show under refresh control
+    /// - parameter action : Action to perform when pull to refresh is triggered
+    /// - parameter target : target object holding refrence to refresh control
+    /// - parameter TintColor : tint color of refresh control
+    func Setup(view : UIView, Title : String?, action : Selector, target : Any?,TintColor : UIColor?){
+        
+        if let TableView = view as? UITableView{
+            TableView.refreshControl = self
+        }else if let ScrollView = view as? UIScrollView{
+            ScrollView.refreshControl = self
+        }else if let CollectionView = view as? UICollectionView{
+            CollectionView.refreshControl = self
+        }
+        
+        if let text = Title{
+            self.attributedTitle = NSAttributedString(string: text)
+        }
+        
+        if let color = TintColor{
+            self.tintColor = color
+        }
+        
+        self.layer.zPosition = -1
+        
+        self.addTarget(target, action: action, for: .valueChanged)
+        
+        self.beginRefreshing()
+    }
+}
+
+extension UIColor {
+    
+    ///Create a Color from Hex String with alpha property
+    /// - parameter hexStr : Color in Hex String
+    /// - parameter alpha : alpha of string. Default is set to 1.0.
+    func Hex(hexString: String, alpha:CGFloat = 1.0) -> UIColor {
+
+        // Convert hex string to an integer
+        let hexint = Int(self.intFromHexString(hexStr: hexString))
+        let red = CGFloat((hexint & 0xff0000) >> 16) / 255.0
+        let green = CGFloat((hexint & 0xff00) >> 8) / 255.0
+        let blue = CGFloat((hexint & 0xff) >> 0) / 255.0
+
+        // Create color object, specifying alpha as well
+        let color = UIColor(red: red, green: green, blue: blue, alpha: alpha)
+        return color
+    }
+    
+    ///Create a Color from Hex String
+    /// - parameter hexStr : Color in Hex String
+    fileprivate func intFromHexString(hexStr: String) -> UInt32 {
+        var hexInt: UInt32 = 0
+        // Create scanner
+        let scanner: Scanner = Scanner(string: hexStr)
+        // Tell scanner to skip the # character
+        scanner.charactersToBeSkipped = CharacterSet(charactersIn: "#")
+        // Scan hex value
+        scanner.scanHexInt32(&hexInt)
+        return hexInt
+    }
+}
+
+extension UIColor {
+
+    /// Check if the color is light or dark, as defined by the injected lightness threshold.
+    /// - Some people report that 0.7 is best. I suggest to find out for yourself.
+    /// - A nil value is returned if the lightness couldn't be determined.
+    func isLight(threshold: Float = 0.5) -> Bool? {
+        let originalCGColor = self.cgColor
+
+        // Now we need to convert it to the RGB colorspace. UIColor.white / UIColor.black are greyscale and not RGB.
+        // If you don't do this then you will crash when accessing components index 2 below when evaluating greyscale colors.
+        let RGBCGColor = originalCGColor.converted(to: CGColorSpaceCreateDeviceRGB(), intent: .defaultIntent, options: nil)
+        guard let components = RGBCGColor?.components else {
+            return nil
+        }
+        guard components.count >= 3 else {
+            return nil
+        }
+
+        let brightness = Float(((components[0] * 299) + (components[1] * 587) + (components[2] * 114)) / 1000)
+        return (brightness > threshold)
+    }
+}
+
+extension Date{
+    ///Convert a Date into String format
+    /// - parameter format : output format for sstring
+    /// - returns : Formatted version of date in String
+    func toString(format : String) -> String{
+        let df = DateFormatter()
+        df.dateFormat = format
+        df.locale = Locale(identifier: "en_US_POSIX")
+        return df.string(from: self)
     }
 }
